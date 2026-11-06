@@ -300,6 +300,7 @@ idf.py -B build-muse-esp-vocat -DIDF_TARGET=esp32s3 \
 > 经代理 `127.0.0.1:12334` 直接请求 registry manifest 返回 **HTTP 200**，且 Docker Desktop 已配同一代理。
 > 镜像压缩后 **5.14 GiB**，`docker pull` 未实测（需用户授权大下载）。
 > 下表已按 22:01 实测结果重写（原表停留在编码前状态，已作废）。
+> **22:56 更新**：第 5、6 项已完成（v6.0.3 容器双板编译通过），表内已改状态。
 
 | # | 项目 | 状态 | 说明 / 阻塞 |
 |---|---|---|---|
@@ -307,8 +308,8 @@ idf.py -B build-muse-esp-vocat -DIDF_TARGET=esp32s3 \
 | 2 | `idf.py reconfigure` + `sdkconfig` 核对 | ✅ 已完成 | v5.5.5 下通过；OCT_FLASH / FLASHMODE_OPI / SAMPLE_MODE_STR / 16MB / SPIRAM_MODE_OCT / MUSE_BOARD_ID 全部生效 |
 | 3 | **新增板级 C 代码编译** | ✅ 已完成 | `board_esp_vocat.c.obj` 126 KB、退出码 0；LVGL / esp_lvgl_adapter 依赖链同时补齐 |
 | 4 | 补丁后脚本语法 / 单测归因 | ✅ 已完成 | `ports.py`/`avatar.py` 的 `ast.parse` 通过；全量单测 188 errors 经「原始 SDK 对照组」确认为 Windows 缺 `fcntl`，非回归 |
-| 5 | **全量链接产出 `.bin`** | ❌ 未完成 | 唯一硬阻塞 = **ESP-IDF v6.0.3**。失败在上游 `main/link_pairing.c:31` 的 `mbedtls/private/gcm.h`（未打补丁的原始 SDK 同样有），v5.5.5 无此头文件。**22:05 修正**：`Bad Gateway` 是 `docker manifest inspect` 的 CLI 侧问题；经代理直接取 registry manifest 返回 **HTTP 200**，Docker Desktop 也已配好代理 → 容器路径大概率可用，但镜像 **5.14 GiB** 需用户点头后才拉 |
-| 6 | 另一块 UI 板回归编译 | ❌ 未完成 | 依赖 5 |
+| 5 | **全量链接产出 `.bin`** | ✅ 已完成 | **22:54 完成**：`espressif/idf:v6.0.3` 容器内 `BUILD_RC=0`，产出 `muse-gadget.bin` 2.1 MB，分区余量 48%、0 error；关键是先用 v6.0.3 重生成 `dependencies.lock` 3.0.0，避开组件管理器联网解析挂起。见 `docs/构建验证记录.md` 第 7 节 |
+| 6 | 另一块 UI 板回归编译 | ✅ 已完成 | v6.0.3 容器 `ostb-echoear-2st` 同样 `RC=0`、0 error，CMake `elseif` 链未截胡其它板 |
 | 7 | Linux/macOS 或 CI 跑全量 host 单测 | ❌ 未完成 | Windows 环境性失败，需在 Unix 侧复跑 |
 | 8 | **上板验收**（18 条逐项判据） | ❌ 未完成 | 需编译产物 + 实物（喵伴在 COM27）；判据见 `board/esp-vocat.md` 第 6 节 |
 | 9 | PCB 版本（V1.0/V1.2）与 0x55 电量计型号实物确认 | ❌ 未完成 | 目前按官方源码移植，需上板串口输出定论 |

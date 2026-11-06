@@ -64,10 +64,14 @@ tools/muse/board.sh flash vocat COM27
 - ✅ C 代码静态自检：括号平衡、20 个 `muse_board_t` 字段全部存在、184 条 init 表一致
 - ✅ **真实构建链**：`idf.py reconfigure` 通过、overlay 全部进入 `sdkconfig`、
   **`board_esp_vocat.c` 编译通过**（`.obj` 126 KB，退出码 0）——详见 [`docs/构建验证记录.md`](docs/构建验证记录.md)
-- ❌ **全量链接未产出 `.bin`**：失败在上游共享层 `main/link_pairing.c:31` 引用
-  `mbedtls/private/gcm.h`，本机 ESP-IDF v5.5.5 无此头文件；该 include 在**未打补丁的原始 SDK 里同样存在**，
-  属跨版本不兼容，与适配包无关。SDK README/CI/`board.sh` 均要求 **v6.0.3**
-- ⚠️ **未上板验证**：屏亮、触摸对齐、录放、电池读数、V1.0/V1.2 各自启动，都还需要实物逐项走一遍
+- ✅ **ESP-IDF v6.0.3 容器全量编译通过**：`BUILD_RC=0`，产出 `muse-gadget.bin` 2.1 MB、
+  `muse-gadget.elf`、bootloader 与分区表；分区余量 **48%**、**0 error**。
+  另一块 UI 板 `ostb-echoear-2st` 回归编译同样 `RC=0`，确认新分支没破坏其它板。
+  详见 [`docs/构建验证记录.md`](docs/构建验证记录.md) 第 7 节。
+  （本机 v5.5.5 曾卡在上游 `main/link_pairing.c:31` 的 `mbedtls/private/gcm.h`，换 v6.0.3 后解决，
+  该 include 在未打补丁的原始 SDK 里同样存在，与适配包无关）
+- ⚠️ **未上板验证**：屏亮、触摸对齐、录放、电池读数、V1.0/V1.2 各自启动，都还需要实物逐项走一遍。
+  固件在 `.verify/out/`（不入库）；**烧录会覆盖原厂 xiaozhi 固件，建议先备份 16 MB flash**
 
 音频采用**方案 A**：对齐 Muse 固定的 16 kHz / 16-bit / STD 双槽，ES7210 只选 MIC1|MIC2 并混合两路。
 官方的 24 kHz / TDM 4 槽 / AEC 参考通道未移植（Muse 共享层全库无 `i2s_tdm`），留作后续里程碑。
