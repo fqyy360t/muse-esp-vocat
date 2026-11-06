@@ -60,9 +60,13 @@ tools/muse/board.sh flash vocat COM27
 ## 状态
 
 - ✅ 硬件契约、迁移方案、板级 C 代码、overlay、板文档、一键应用脚本
-- ✅ `apply.py --check` 19/19 锚点通过；在临时 SDK 副本上实际应用成功且二次运行全部跳过
+- ✅ `apply.py --check` 19/19 锚点通过；独立 SDK 副本上真实应用 + 二次运行 19 项全 skip
 - ✅ C 代码静态自检：括号平衡、20 个 `muse_board_t` 字段全部存在、184 条 init 表一致
-- ⚠️ **未在本机编译通过**：本机只有 ESP-IDF v5.5.5，SDK README/CI 明确要求 **v6.0.3**（"Other versions aren't supported"）
+- ✅ **真实构建链**：`idf.py reconfigure` 通过、overlay 全部进入 `sdkconfig`、
+  **`board_esp_vocat.c` 编译通过**（`.obj` 126 KB，退出码 0）——详见 [`docs/构建验证记录.md`](docs/构建验证记录.md)
+- ❌ **全量链接未产出 `.bin`**：失败在上游共享层 `main/link_pairing.c:31` 引用
+  `mbedtls/private/gcm.h`，本机 ESP-IDF v5.5.5 无此头文件；该 include 在**未打补丁的原始 SDK 里同样存在**，
+  属跨版本不兼容，与适配包无关。SDK README/CI/`board.sh` 均要求 **v6.0.3**
 - ⚠️ **未上板验证**：屏亮、触摸对齐、录放、电池读数、V1.0/V1.2 各自启动，都还需要实物逐项走一遍
 
 音频采用**方案 A**：对齐 Muse 固定的 16 kHz / 16-bit / STD 双槽，ES7210 只选 MIC1|MIC2 并混合两路。

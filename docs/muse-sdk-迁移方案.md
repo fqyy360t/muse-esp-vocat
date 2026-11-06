@@ -291,6 +291,13 @@ idf.py -B build-muse-esp-vocat -DIDF_TARGET=esp32s3 \
 
 ## 10. 当前状态 / 未完成清单（2026-11-06 复核）
 
+> **21:58 复核更新（覆盖下表第 1、3 项）**：已在独立 SDK 副本上完成真实构建链验证——
+> `reconfigure` 通过、overlay 全部生效、**`board_esp_vocat.c` 编译通过**（`.obj` 126 KB）；
+> 全量链接停在**上游共享层** `main/link_pairing.c:31` 的 `mbedtls/private/gcm.h`
+> （v5.5.5 无此头文件，原始 SDK 同样有该 include），因此仍需 **IDF v6.0.3** 才能产出 `.bin`。
+> 单测已用对照实验归因为 Windows 环境性。完整证据见 `docs/构建验证记录.md`。
+> Docker 容器路径本机不可用（manifest `Bad Gateway`）。
+
 | # | 未完成项 | 阻塞条件 | 谁来做 |
 |---|---|---|---|
 | 1 | **编译验证**：`apply.py` 应用到 SDK 副本 → `board.sh build vocat` → 核对生成的 `sdkconfig` → `check_sizes` | 本机只有 IDF v5.5.5；SDK/CI/board.sh 均要求 **v6.0.3**，Docker daemon 未运行 | 需用户装 v6.0.3 或启动 Docker 后，我可继续 |

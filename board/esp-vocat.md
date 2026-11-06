@@ -85,11 +85,40 @@ PCB 版本、电量计芯片型号、颜色反转方向都标为「未确认」�
 | 编译 | **未在本机编译通过**（本机只有 ESP-IDF v5.5.5，SDK 要求 v6.0.3）。代码为静态适配，需按第 3 节验证 |
 | 上板 | **未验证**：屏亮、触摸对齐、录放、电池读数、V1.0/V1.2 各自启动，均需实物逐项走一遍 |
 
-## 6. 验收清单（上板后）
+## 6. 验收清单（逐条打勾，记录「通过 / 失败 + 串口原文 + 复现步骤」）
 
-1. `tools/muse/board.sh build vocat` 通过，`check_sizes` 应用分区空闲 >10%。
-2. 逐行核对 overlay 的每一项确实进入生成的 `build-*/sdkconfig`（尤其 `OCT_FLASH` / `FLASHMODE_OPI` / `SPIRAM_MODE_OCT`）。
-3. 重建至少另一块 UI 板，确认 CMake `elseif` 链没破坏别人。
-4. 串口看 `PCB V1.x` 日志，确认 V1.0 / V1.2 两台板各自启动正常。
-5. 屏亮 → 触摸对齐 → 配对 → 录放 → 电池读数 → 颜色是否正确（必要时开 invert）。
-6. `python3 -m unittest discover -s tests -p 'test_*.py'`。
+### 6.1 烧录前（构建产物侧）
+
+| # | 检查项 | 期望结果 / 判定 | 失败时排查 |
+|---|---|---|---|
+| 1 | `tools/muse/board.sh build vocat` | 退出码 0，产出 `build-muse-esp-vocat/muse-gadget.bin` | 按编译报错定位；**不要**为过编译去改共享层代码 |
+| 2 | 核对 `build-muse-esp-vocat/sdkconfig` | `ESPTOOLPY_OCT_FLASH=y`、`FLASHMODE_OPI=y`、`FLASH_SAMPLE_MODE_STR=y`、`FLASHSIZE_16MB=y`、`SPIRAM_MODE_OCT=y`、`SPIRAM_SPEED_80M=y`、`MUSE_BOARD_ESP_VOCAT=y`、`MUSE_BOARD_ID="esp_vocat"` | 缺项→查 `SDKCONFIG_DEFAULTS` 加载顺序（`sdkconfig.defaults` → `sdkconfig.muse` → 本 overlay）；choice 里旧的 `=y` 必须显式写 `=n` |
+| 3 | `check_sizes` | 应用分区空闲 **>10%** | 超了先裁组件，别动分区表 |
+| 4 | 回归编译另一块 UI 板 | 例如 `board.sh build echoear` 通过 | 确认 CMake `elseif` 链只是多了一个分支，没有截胡别的板 |
+| 5 | host 单测 | 在 **Linux/macOS** 跑 `python3 -m unittest discover -s tests -p 'test_*.py'` | Windows 上 `tools/muse/avatar.py` 依赖 `fcntl`，会有大量 import error——**这是环境性失败**，未打补丁的原始 SDK 同样报错，不能当作代码回归 |
+
+### 6.2 上电与串口（COM27，ESP32-S3 原生 USB-Serial/JTAG）
+
+| # | 观察点 | 期望串口输出 / 现象 | 失败时排查 |
+|---|---|---|---|
+| 6 | Flash 模式 | `Octal Flash Mode Enabled`、`detected chip: mxic (opi)`、`flash io: opi_str` | 探测失败→回 6.1 第 2 条；写成 DIO/QIO 会直接起不来 |
+| 7 | 容量提示 | `Detected size(32768k) larger than ... (16384k). Using the size in the binary image header` | **这是预期**，物理 32 MB / 镜像按 16 MB 用，不是错误 |
+| 8 | PSRAM | `Found 16MB PSRAM device`、`Speed: 80MHz` | 缺失→检查 `SPIRAM_MODE_OCT` 是否被 defaults 的 QUAD 覆盖 |
+| 9 | **PCB 版本** | 驱动打印 `PCB V1.0` 或 `PCB V1.2`，且引脚按第 2 节表切换 | 无输出→查 GPIO48 探测与 I2C ACK；**必须先写输出锁存器再切输出**，否则 V1.2 codec 掉电引发重启循环 |
+| 10 | 软复位 | 重启后版本**不重探**（命中 RTC 缓存），但缓存路径仍须套用 V1.2 引脚 | 若每次都重探→检查 `RTC_NOINIT` magic；残电会造成假 ACK |
+
+### 6.3 外设逐项
+
+| # | 外设 | 期望现象 | 判定 / 失败排查 |
+|---|---|---|---|
+| 11 | 显示 | 360×360 圆屏点亮，无花屏 / 撕裂 | 黑屏→查 QSPI 引脚、背光 GPIO44、`POWER_CTRL`(GPIO9) 是否置 0；`LCD_RST` V1.0=3 / V1.2=47 且**复位极性不同** |
+| 12 | 颜色 | 色块正常 | 反色→加 `-DESP_VOCAT_INVERT_COLOR=1` 重编（官方不 invert，OSTB 复刻板 invert） |
+| 13 | 触摸 | 点按位置与 UI 反馈对齐 | 偏移 / 无响应→查 CST816S 0x15、INT=GPIO10、reg 0x02 六字节解码 |
+| 14 | 播放 | 提示音 / 语音可听 | 无声→ES8311 0x18(7b) / 0x30(8b)、PA 引脚 V1.0=4 / V1.2=15、I2S 42/40/39/41 |
+| 15 | 录音 | 唤醒词 / 语音指令可用 | 无输入→ES7210 0x40/0x80、DIN V1.0=15 / V1.2=3、MIC1\|MIC2；**当前是 16 kHz STD 双槽，不是官方 TDM+AEC** |
+| 16 | **电量计** | 百分比 / 充电状态读数合理 | 读数为 0 或乱跳→0x55 芯片型号**未证实**，核对 reg 0x08/0x0A/0x0C/0x14/0x2C |
+| 17 | BOOT 键 | 短按 / 长按触发预期动作 | GPIO0 |
+| 18 | 配对 | 能完成 Home Link 配对 | 需有效 `CONFIG_GADGET_SDK_TOKEN`；构建时无 token 会告警 "Gadgets without one will stop pairing" |
+
+> 第 9、16 条是**只有实物才能定论**的两项：PCB 版本与电量计型号目前都来自官方源码推断，
+> 上板后请把串口原文贴回 `flow/进展.md`，据此更新硬件契约文档。
