@@ -5,7 +5,7 @@
 的 ESP32 固件框架。
 
 > ⚠️ **这个仓库不含 Muse SDK 源码，clone 下来不能直接编译。**
-> 它是**适配包（overlay）**：只有 15 个文件 / 约 220 KB —— 新增的板级代码、sdkconfig overlay、
+> 它是**适配包（overlay）**：只有 16 个文件 / 约 220 KB —— 新增的板级代码、sdkconfig overlay、
 > 文档，以及一份 19 处锚点的 `apply.py` 补丁。上游 `esp32/` 的 948 个文件 / 28 MB **不在这里**，
 > 由 `setup.py` 在固定 commit 上自动拉到 `vendor/`（已 gitignore）后再打补丁。
 >
