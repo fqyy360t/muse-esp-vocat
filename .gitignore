@@ -29,3 +29,6 @@ Thumbs.db
 
 # 本地 SDK 验证副本（28 MB 源码 + 编译产物，不进仓库）
 .verify/
+
+# setup.py 自动拉取的上游 SDK 副本（948 文件 / 28 MB，不进本仓库）
+vendor/

@@ -4,8 +4,17 @@
 [`facebookincubator/muse-gadget-sdk`](https://github.com/facebookincubator/muse-gadget-sdk)
 的 ESP32 固件框架。
 
-这个仓库**只包含新增的板级代码和一份锚点式补丁**，不是 SDK 的 fork，也不是可直接编译的完整工程。
-用法是：在你自己的 `muse-gadget-sdk` 副本里跑一次 `apply.py`，把板文件与注册项合进去，然后照常构建。
+> ⚠️ **这个仓库不含 Muse SDK 源码，clone 下来不能直接编译。**
+> 它是**适配包（overlay）**：只有 15 个文件 / 约 220 KB —— 新增的板级代码、sdkconfig overlay、
+> 文档，以及一份 19 处锚点的 `apply.py` 补丁。上游 `esp32/` 的 948 个文件 / 28 MB **不在这里**，
+> 由 `setup.py` 在固定 commit 上自动拉到 `vendor/`（已 gitignore）后再打补丁。
+>
+> 为什么这样做：① 上游是 Apache-2.0（面板初始化表另源自 `78/xiaozhi-esp32` 的 MIT），
+> 整包复制会把别人的代码和许可证责任一起搬进仓库；② 保持上游仓库零改动，补丁能对任意一份
+> SDK 副本生效；③ 仓库轻量，上游更新后只需重跑 `--check` 确认锚点。
+>
+> 固定的上游版本：`463bd2a05380fea4211b0099ad0f70933c108b20`。
+> 若上游后续改了被补丁的文件，`setup.py --check-only` 会提前报锚点失配。
 
 ## 目录
 
@@ -16,25 +25,41 @@
 | `board/esp_vocat_touch.h` | CST816S reg 0x02 六字节解码 |
 | `board/sdkconfig.muse-esp-vocat` | 板级 sdkconfig overlay（**Octal Flash / OPI**） |
 | `board/esp-vocat.md` | 板级说明：GPIO、版本差异、构建、验收、未验证项 |
-| `apply.py` | 一键应用：复制 5 个新文件 + 修改 8 个上游文件（共 19 处） |
+| `apply.py` | 锚点补丁：复制 5 个新文件 + 修改 8 个上游文件（共 19 处） |
+| `setup.py` / `setup.sh` | **一键准备**：拉取固定版本上游 SDK 到 `vendor/` 校验锚点并打补丁 |
 | `docs/esp-vocat-硬件接口定义.md` | 完整硬件契约（元件 / 组件 / GPIO / 电源域 / 初始化顺序） |
 | `docs/muse-sdk-迁移方案.md` | 迁移设计、接口映射、风险与构建验证 |
+| `docs/构建验证记录.md` | 补丁、编译、烧录、启动日志的逐项证据 |
 | `flow/进展.md` | 按 `project-flow-cy` 写的接力交接记录 |
 
 ## 快速开始
 
 ```bash
-# 1) 只验证补丁锚点是否还能对上你的 SDK 版本（只读）
-python apply.py --sdk /path/to/muse-gadget-sdk --check
+# 1) 一键准备：拉取上游固定 commit 到 vendor/（gitignore），校验锚点并打补丁
+python setup.py
+#    Git Bash / macOS / Linux 也可以用：./setup.sh
 
-# 2) 预览 / 实际应用
-python apply.py --sdk /path/to/muse-gadget-sdk --dry-run
-python apply.py --sdk /path/to/muse-gadget-sdk
-
-# 3) 用 ESP-IDF v6.0.3 构建（先执行 IDF 的 export 脚本激活环境）
-cd /path/to/muse-gadget-sdk/esp32
+# 2) 构建（需 ESP-IDF v6.0.3，先执行 IDF 的 export 脚本激活环境）
+cd vendor/muse-gadget-sdk/esp32
 tools/muse/board.sh build vocat
 tools/muse/board.sh flash vocat COM27
+```
+
+已有 SDK 副本、或只想验证锚点：
+
+```bash
+python setup.py --sdk-dir /path/to/muse-gadget-sdk   # 用已有副本，跳过 clone
+python setup.py --check-only                         # 只校验锚点，不改动任何文件
+python setup.py --mirror https://gh-proxy.com/https://github.com/facebookincubator/muse-gadget-sdk.git
+# 脚本已内置 gh-proxy.com 镜像自动回退 + HTTP/1.1（避开 Windows 代理断流），一般无需手动指定
+```
+
+手动方式（不跑 `setup.py`）：
+
+```bash
+python apply.py --sdk /path/to/muse-gadget-sdk --check
+python apply.py --sdk /path/to/muse-gadget-sdk --dry-run
+python apply.py --sdk /path/to/muse-gadget-sdk
 ```
 
 `apply.py` 特性：只改你显式传入的目录、锚点必须唯一命中、失败即停、可重复运行（第二次全部跳过）、
