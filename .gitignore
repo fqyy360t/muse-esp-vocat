@@ -1,0 +1,28 @@
+# 串口探测原始日志（可能含 MAC / 凭据），不入库
+_probe_*.txt
+*.log
+
+# 构建产物与本地配置
+build/
+build-*/
+managed_components/
+sdkconfig
+sdkconfig.old
+*.bin
+*.elf
+*.map
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# WorkBuddy 本地项目数据（不是交付物；保留在磁盘上，只是不入库）
+.workbuddy/

@@ -1,0 +1,49 @@
+# Espressif ESP-VoCat (喵伴 / EchoEar) — Muse SDK board overlay.
+# Load AFTER sdkconfig.defaults and devices/sdkconfig.muse.
+#
+# Measured on the real board (COM27, 2026-11-06):
+#   esptool: ESP32-S3 rev v0.2, Flash type set in eFuse: octal (8 data lines),
+#            Manufacturer c2 / Device 8039 (MXIC OPI), Detected flash size 32MB,
+#            Embedded PSRAM 16MB (AP_1v8), USB mode USB-Serial/JTAG (303A:1001).
+#   Stock xiaozhi 2.0.4.4 boot log: "Octal Flash Mode Enabled",
+#            "detected chip: mxic (opi)", "flash io: opi_str",
+#            "Detected size(32768k) larger than the size in the binary image
+#             header(16384k). Using the size in the binary image header."
+# => The part is physically 32 MB OPI, but the stock image is built for 16 MB.
+#    Keep 16 MB here so partitions_muse.csv and the OTA layout match the stock
+#    image; the extra 16 MB stays unused. Use OPI, not the DIO/QIO most Muse
+#    boards use, because the eFuse fixes the flash type.
+CONFIG_IDF_TARGET="esp32s3"
+CONFIG_MUSE_BOARD_ESP_VOCAT=y
+CONFIG_HOMEHUB_BUTTON_GPIO=0
+
+# ---- Flash: Octal / OPI (STR) ----
+# sdkconfig.defaults selects QIO; turn it off explicitly, since that file is
+# loaded before this overlay and a stale "=y" in a choice is ambiguous.
+CONFIG_ESPTOOLPY_FLASH_MODE_AUTO_DETECT=n
+CONFIG_ESPTOOLPY_OCT_FLASH=y
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=n
+CONFIG_ESPTOOLPY_FLASHMODE_DIO=n
+CONFIG_ESPTOOLPY_FLASHMODE_OPI=y
+# Stock firmware runs "opi_str"; the IDF default for OCT_FLASH is DTR, so pin
+# it to STR to match the measured part/boot log.
+CONFIG_ESPTOOLPY_FLASH_SAMPLE_MODE_STR=y
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE="16MB"
+
+# ---- PSRAM: 16 MB Octal @ 80 MHz ----
+# sdkconfig.defaults assumes quad; disable it explicitly.
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_QUAD=n
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+CONFIG_SPIRAM_IGNORE_NOTFOUND=n
+CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY=y
+
+# ---- Console: the chip's own USB Serial/JTAG, VID 303A / PID 1001 ----
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+
+# Same as the other full-UI S3 boards: keep DMA-capable internal RAM free for
+# the QSPI panel and shared duplex audio.
+CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL=y
+CONFIG_ESP_PHY_INIT_DATA_IN_PARTITION=n
