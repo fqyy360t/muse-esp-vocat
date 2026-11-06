@@ -3,7 +3,9 @@
 > 目标：在 `F:\git\muse-gadget-sdk\esp32` 框架内，**新编一块板级适配**，让喵伴官方 PCB
 > （`espressif/esp-vocat`）跑起 Muse 的完整 UI / 语音 / 设置。
 > 配套硬件契约见 `docs/esp-vocat-硬件接口定义.md`。整理日期：2026-11-06。
-> 本文件是设计，尚未落地代码。
+> 本文件是设计与迁移方案。**代码已于 2026-11-06 落地**，但不在 SDK 仓库内：完整适配包在
+> `F://git//miaoban-muse`（`board/` + `apply.py` + 板文档），需对 SDK 副本运行 `apply.py` 才生效。
+> 当前状态与未完成项见第 10 节。
 
 ---
 
@@ -241,10 +243,16 @@ I2C_NUM_0；Muse echoear 板写 `I2C_NUM_0`。传输实际走 bus_handle，**跟
 | 组件 manifest | `components/muse/idf_component.yml:16` → `idf: version: ">=5.5"`；`main/idf_component.yml:24` → `">=5.1"` | 只代表组件管理器的**下限**，与 README 不矛盾；v5.5.5 能过依赖解析，不代表能编译通过 |
 | 环境变量 | `IDF_PATH` 为空、`idf.py` 不在 PATH；手动设 `IDF_PATH` 跑 idf.py 会报 `IDF_PYTHON_ENV_PATH is missing` | 真正构建必须先执行 `export.bat` / `export.ps1` 激活，不能只设 `IDF_PATH` |
 | 构建缓存 | `esp32/` 下无 `build/`、`sdkconfig`、`managed_components/` | 首次构建会联网拉取全部组件，需保证代理可用 |
-| 仓库归属 | `muse-gadget-sdk` 的 origin = `https://gh-proxy.com//https://github.com/**facebookincubator**/muse-gadget-sdk.git`，当前 `main` 分支、工作树干净；`xiaozhi-esp32` origin 指向 `78/xiaozhi-esp32`（上游），同样干净；`miaoban-muse` 还不是 git 仓库 | **必须开本地功能分支（如 `feat/esp-vocat`）再改，绝不 push 这两个上游** |
+| 仓库归属 | `muse-gadget-sdk` origin = `facebookincubator/muse-gadget-sdk`（上游），`xiaozhi-esp32` origin = `78/xiaozhi-esp32`（上游），两者均干净 `main`；`miaoban-muse` 已 `git init` + 本地提交 `67b116b`，**未添加远程、未 push** | 适配包只落工作区，SDK 仓库零改动；绝不 push 两个上游 |
 
 => 编译验证分两级：先用现有 v5.5.5 跑 `reconfigure` 快速探底（能过就继续）；若因 v6.0 API 报错，则
-需要另行安装 ESP-IDF v6.0.3（约 GB 级下载 + 工具链，属需用户同意的大动作），**不要为了过编译去改共享层代码迁就 v5.5.5**。
+需要另行安装 ESP-IDF v6.0.3（约 GB 级下载 + 工具链，属需用户同意的大动作），
+**不要为了过编译去改共享层代码迁就 v5.5.5**。
+
+**2026-11-06 复核补充**：`tools/muse/board.sh` 自身也会在 `$HOME/.espressif/esp-idf-v6.0.3` 等
+路径找 `export.sh`，找不到就直接报 `idf.py not found; activate ESP-IDF v6.0.3 first`。本机 Docker
+Desktop 虽已安装，但 **daemon 未运行**（`npipe:////./pipe/dockerDesktopLinuxEngine` 连不上），
+因此 `espressif/idf:v6.0.3` 容器路径当前也不可用。**截至本次复核仍未做任何编译**。
 
 ```bash
 # 助手脚本（推荐）
@@ -265,9 +273,9 @@ idf.py -B build-muse-esp-vocat -DIDF_TARGET=esp32s3 \
 
 ---
 
-## 9. 待用户确认的三个决策（进入编码前）
+## 9. 三个决策（2026-11-06 已定）
 
-> **决策已定（2026-11-06，用户）**：代码**只写在 `F://git//miaoban-muse` 工作区**，不修改
+> **最终选择：1B / 2A / 3「保持最小集」**。代码**只写在 `F://git//miaoban-muse` 工作区**，不修改
 > `muse-gadget-sdk` 仓库，由用户单独提交到自己的 GitHub。交付形态为「新增板文件 + overlay +
 > 板文档 + `apply.py` 锚点补丁包」，用户对本地 SDK 副本运行 `apply.py` 完成合入。
 > 音频按方案 A（16 kHz / STD 双槽），协作骨架保持最小集。
@@ -278,3 +286,29 @@ idf.py -B build-muse-esp-vocat -DIDF_TARGET=esp32s3 \
 2. **音频方案**：(A) 对齐 Muse 框架 16 kHz / STD 双槽（推荐）；(B) 扩展共享层支持 TDM+AEC。
 3. **协作骨架**：是否按 `project-flow-cy` 全量接入 `flow/` + `docs/` + hook + AGENTS.md/CLAUDE.md 入口
    （当前只建了 `docs/` 两份文档与 `flow/进展.md` 最小交接集）。
+
+---
+
+## 10. 当前状态 / 未完成清单（2026-11-06 复核）
+
+| # | 未完成项 | 阻塞条件 | 谁来做 |
+|---|---|---|---|
+| 1 | **编译验证**：`apply.py` 应用到 SDK 副本 → `board.sh build vocat` → 核对生成的 `sdkconfig` → `check_sizes` | 本机只有 IDF v5.5.5；SDK/CI/board.sh 均要求 **v6.0.3**，Docker daemon 未运行 | 需用户装 v6.0.3 或启动 Docker 后，我可继续 |
+| 2 | **回归编译另一块 UI 板**，确认 CMake `elseif` 链没破坏其它板 | 同 1 | 同上 |
+| 3 | **跑 SDK 单测** `python3 -m unittest discover -s tests -p 'test_*.py'`（位于 `<sdk>/esp32/tests`） | 同 1（部分单测为纯 host 测试，可提前跑） | 我可先跑 host 单测 |
+| 4 | **上板验收**：屏亮 / 触摸对齐 / 配对 / 录放 / 电池读数 / 颜色反转 / V1.0 与 V1.2 各自启动 | 需编译产物 + 实物（喵伴已在 COM27） | 用户烧录后配合串口日志 |
+| 5 | **确认 PCB 版本与电量计型号**：目前 GPIO48 探测与 0x55 寄存器是按官方代码移植，未用实物确认 | 需上板串口输出 | 同 4 |
+| 6 | **应用补丁到真实 SDK 副本**：`apply.py` 只在临时骨架副本上验证过（19/19 + 幂等），真实副本尚未应用 | 用户指定副本路径 | 用户执行或授权我执行 |
+| 7 | **GitHub 提交**：已本地 commit `67b116b`，未加远程、未 push | 用户提供仓库地址并授权 | 用户 |
+| 8 | 音频方案 B（24 kHz / TDM 4 槽 / AEC 参考通道） | Muse 共享层无 `i2s_tdm`，需改共享层 | 后续里程碑，当前方案 A 可用即可 |
+| 9 | BMI270 IMU / microSD / UART 旋转底座 / 摄像头接入 | Muse 框架无对应抽象 | 后续里程碑，非必需 |
+| 10 | `project-flow-cy` 全量协作骨架（charter/plan/decisions/踩坑记录/tasks/hook/AGENTS 入口） | 用户已选「保持最小集」 | 明确不做 |
+
+**本次复核补做（2026-11-06 21:10）**：`apply.py --check` 复跑仍 19/19；在临时骨架副本上
+应用补丁后，对被改的 `ports.py` / `avatar.py` 做 `ast.parse` **语法检查通过**。
+`board.sh` 的 shell 语法检查（`bash -n`）被本机安全策略拦截（禁止启动该程序），
+**未执行、也不绕过**；其内容与 CRLF 已在前一棒的临时副本验证中确认。
+
+**已完成**：硬件契约、迁移方案、板级 C 驱动、自包含面板表/触摸解码、Octal Flash overlay、
+板文档、19 处锚点补丁脚本、静态自检（括号/字段/184 条 init 表/`--check` 19/19/临时副本幂等）、
+实物预检、文档与许可证、工作区 git 初始化与本地提交、SDK 上游零改动。
