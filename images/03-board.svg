@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 540" width="1200" height="540" role="img" aria-label="ESP-VoCat 板上的外设与适配要点，统一收进 muse_board_t 接口">
+  <rect width="1200" height="540" fill="#ffffff"/>
+  <text x="48" y="46" font-family="sans-serif" font-size="25" font-weight="700" fill="#111827">适配的到底是块什么板</text>
+  <text x="48" y="76" font-family="sans-serif" font-size="14" fill="#6b7280">一块 360×360 圆屏语音板。屏、触摸、音频、Flash 模式、两套 PCB 引脚，都要一个一个对上。</text>
+
+  <g stroke="#e5e7eb" stroke-width="1.5">
+    <line x1="348" y1="174" x2="490" y2="240"/>
+    <line x1="348" y1="284" x2="490" y2="290"/>
+    <line x1="348" y1="394" x2="490" y2="340"/>
+    <line x1="852" y1="174" x2="710" y2="240"/>
+    <line x1="852" y1="284" x2="710" y2="290"/>
+    <line x1="852" y1="394" x2="710" y2="340"/>
+  </g>
+
+  <circle cx="600" cy="290" r="112" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+  <text x="600" y="266" text-anchor="middle" font-family="sans-serif" font-size="21" font-weight="700" fill="#1e40af">360 × 360</text>
+  <text x="600" y="296" text-anchor="middle" font-family="sans-serif" font-size="15" fill="#1e40af">圆形屏</text>
+  <text x="600" y="320" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#6b7280">ST77916 QSPI</text>
+  <text x="600" y="342" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#9ca3af">184 条初始化命令</text>
+
+  <g font-family="sans-serif">
+    <rect x="48" y="130" width="300" height="88" rx="10" fill="#f9fafb" stroke="#e5e7eb"/>
+    <text x="66" y="158" font-size="13.5" font-weight="700" fill="#111827">ESP32-S3 N16R16VA</text>
+    <text x="66" y="182" font-size="12" fill="#374151">Octal Flash：物理 32 MB，</text>
+    <text x="66" y="200" font-size="12" fill="#374151">镜像按 16 MB 布局（OPI / STR）</text>
+
+    <rect x="48" y="240" width="300" height="88" rx="10" fill="#f9fafb" stroke="#e5e7eb"/>
+    <text x="66" y="268" font-size="13.5" font-weight="700" fill="#111827">16 MB Octal PSRAM</text>
+    <text x="66" y="292" font-size="12" fill="#374151">80 MHz；eFuse 锁定 8 线模式，</text>
+    <text x="66" y="310" font-size="12" fill="#374151">写成普通 DIO 会起不来</text>
+
+    <rect x="48" y="350" width="300" height="88" rx="10" fill="#f9fafb" stroke="#e5e7eb"/>
+    <text x="66" y="378" font-size="13.5" font-weight="700" fill="#111827">GPIO48 自动分版本</text>
+    <text x="66" y="402" font-size="12" fill="#374151">V1.0 / V1.2 两套 GPIO，</text>
+    <text x="66" y="420" font-size="12" fill="#374151">运行时探测 + RTC 缓存</text>
+
+    <rect x="852" y="130" width="300" height="88" rx="10" fill="#f9fafb" stroke="#e5e7eb"/>
+    <text x="870" y="158" font-size="13.5" font-weight="700" fill="#111827">CST816S 触摸</text>
+    <text x="870" y="182" font-size="12" fill="#374151">读取 0x02 寄存器的六字节数据，</text>
+    <text x="870" y="200" font-size="12" fill="#374151">坐标对齐仍需人工看一眼</text>
+
+    <rect x="852" y="240" width="300" height="88" rx="10" fill="#f9fafb" stroke="#e5e7eb"/>
+    <text x="870" y="268" font-size="13.5" font-weight="700" fill="#111827">ES8311 + ES7210</text>
+    <text x="870" y="292" font-size="12" fill="#374151">功放 + 双麦，16 kHz STD 双槽；</text>
+    <text x="870" y="310" font-size="12" fill="#374151">没移植 24 kHz TDM 与 AEC</text>
+
+    <rect x="852" y="350" width="300" height="88" rx="10" fill="#f9fafb" stroke="#e5e7eb"/>
+    <text x="870" y="378" font-size="13.5" font-weight="700" fill="#111827">BOOT 键 + 0x55 电量计</text>
+    <text x="870" y="402" font-size="12" fill="#374151">按官方源码移植；</text>
+    <text x="870" y="420" font-size="12" fill="#374151">电量计型号尚未实物确认</text>
+  </g>
+
+  <rect x="48" y="466" width="1104" height="60" rx="10" fill="#f5f3ff" stroke="#ddd6fe"/>
+  <text x="72" y="493" font-family="sans-serif" font-size="13.5" font-weight="700" fill="#4c1d95">这些全部收进 muse_board_t 一个接口</text>
+  <text x="72" y="515" font-family="sans-serif" font-size="12.5" fill="#374151">Muse 上层只认这个接口、不关心具体引脚；换板只换 board_*.c，不必改共享层。</text>
+</svg>

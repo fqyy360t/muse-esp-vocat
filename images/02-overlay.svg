@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 470" width="1200" height="470" role="img" aria-label="为什么仓库只有 16 个文件：适配包加自动拉取的上游 SDK，合成可编译工程">
+  <rect width="1200" height="470" fill="#ffffff"/>
+  <text x="48" y="46" font-family="sans-serif" font-size="25" font-weight="700" fill="#111827">为什么 clone 下来只有 16 个文件</text>
+  <text x="48" y="76" font-family="sans-serif" font-size="14" fill="#6b7280">这是「补丁包」，不是 SDK 的副本。缺的那 948 个文件，由脚本在固定版本上自动补齐。</text>
+
+  <rect x="48" y="104" width="330" height="284" rx="12" fill="#f9fafb" stroke="#e5e7eb"/>
+  <text x="70" y="136" font-family="sans-serif" font-size="15" font-weight="700" fill="#111827">① 本仓库（入库）</text>
+  <text x="70" y="158" font-family="sans-serif" font-size="12" fill="#6b7280">22 个文件 / 约 700 KB（含 6 张图）</text>
+  <g font-family="sans-serif" font-size="12.5" fill="#374151">
+    <rect x="70" y="176" width="286" height="38" rx="7" fill="#ffffff" stroke="#e5e7eb"/>
+    <text x="84" y="200">board/　5 个新板级文件</text>
+    <rect x="70" y="222" width="286" height="38" rx="7" fill="#ffffff" stroke="#e5e7eb"/>
+    <text x="84" y="246">apply.py　19 处锚点补丁</text>
+    <rect x="70" y="268" width="286" height="38" rx="7" fill="#ffffff" stroke="#e5e7eb"/>
+    <text x="84" y="292">setup.py / setup.sh　一键准备</text>
+    <rect x="70" y="314" width="286" height="38" rx="7" fill="#ffffff" stroke="#e5e7eb"/>
+    <text x="84" y="338">docs/ + flow/　契约与证据</text>
+  </g>
+  <text x="70" y="374" font-family="sans-serif" font-size="11.5" fill="#9ca3af">没有 esp32/ 源码，也不改上游仓库</text>
+
+  <g stroke="#9ca3af" stroke-width="1.6" fill="#9ca3af">
+    <line x1="380" y1="246" x2="414" y2="246"/>
+    <polygon points="414,241 424,246 414,251"/>
+  </g>
+
+  <rect x="428" y="104" width="330" height="284" rx="12" fill="#f5f3ff" stroke="#ddd6fe"/>
+  <text x="450" y="136" font-family="sans-serif" font-size="15" font-weight="700" fill="#4c1d95">② setup.py 做三件事</text>
+  <text x="450" y="158" font-family="sans-serif" font-size="12" fill="#6b7280">一条命令，可重复运行</text>
+  <g font-family="sans-serif" font-size="12.5" fill="#4c1d95">
+    <rect x="450" y="176" width="286" height="46" rx="7" fill="#ffffff" stroke="#e9d5ff"/>
+    <text x="464" y="196">拉取固定版本的上游源码</text>
+    <text x="464" y="214" font-size="11" fill="#6b7280">固定版本 463bd2a0 → vendor/</text>
+    <rect x="450" y="230" width="286" height="46" rx="7" fill="#ffffff" stroke="#e9d5ff"/>
+    <text x="464" y="250">先校验，再动手</text>
+    <text x="464" y="268" font-size="11" fill="#6b7280">19 处锚点全部命中</text>
+    <rect x="450" y="284" width="286" height="46" rx="7" fill="#ffffff" stroke="#e9d5ff"/>
+    <text x="464" y="304">复制新文件 + 改 8 个上游文件</text>
+    <text x="464" y="322" font-size="11" fill="#6b7280">共 19 处，第二次运行全跳过</text>
+  </g>
+  <text x="450" y="360" font-family="sans-serif" font-size="11.5" fill="#9ca3af">锚点对不上会直接停下，不会打坏</text>
+
+  <g stroke="#9ca3af" stroke-width="1.6" fill="#9ca3af">
+    <line x1="760" y1="246" x2="794" y2="246"/>
+    <polygon points="794,241 804,246 794,251"/>
+  </g>
+
+  <rect x="808" y="104" width="344" height="284" rx="12" fill="#eff6ff" stroke="#bfdbfe"/>
+  <text x="830" y="136" font-family="sans-serif" font-size="15" font-weight="700" fill="#1e40af">③ 得到可编译工程</text>
+  <text x="830" y="158" font-family="sans-serif" font-size="12" fill="#6b7280">vendor/ 里，本地缓存，不入库</text>
+  <g font-family="sans-serif" font-size="12.5" fill="#1e40af">
+    <rect x="830" y="176" width="300" height="46" rx="7" fill="#ffffff" stroke="#bfdbfe"/>
+    <text x="844" y="196">948 个文件 / 28 MB</text>
+    <text x="844" y="214" font-size="11" fill="#6b7280">上游 esp32/ 完整源码 + 本板补丁</text>
+    <rect x="830" y="230" width="300" height="46" rx="7" fill="#ffffff" stroke="#bfdbfe"/>
+    <text x="844" y="250">ESP-IDF v6.0.3 编译</text>
+    <text x="844" y="268" font-size="11" fill="#6b7280">编译通过、0 错误，余量 48%</text>
+    <rect x="830" y="284" width="300" height="46" rx="7" fill="#ffffff" stroke="#bfdbfe"/>
+    <text x="844" y="304">产出可烧录的固件</text>
+    <text x="844" y="322" font-size="11" fill="#6b7280">2.1 MB，可直接烧录</text>
+  </g>
+  <text x="830" y="360" font-family="sans-serif" font-size="11.5" fill="#9ca3af">上游改动？先跑 --check-only 就知道</text>
+
+  <rect x="48" y="406" width="1104" height="48" rx="10" fill="#f9fafb" stroke="#e5e7eb"/>
+  <text x="72" y="435" font-family="sans-serif" font-size="12.5" fill="#374151">.gitignore 排除了 vendor/ 与 .verify/：上游 Apache-2.0 代码不搬进本仓库，GitHub 上永远只有这份适配包。</text>
+</svg>
