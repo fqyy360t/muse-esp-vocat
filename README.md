@@ -70,8 +70,14 @@ tools/muse/board.sh flash vocat COM27
   详见 [`docs/构建验证记录.md`](docs/构建验证记录.md) 第 7 节。
   （本机 v5.5.5 曾卡在上游 `main/link_pairing.c:31` 的 `mbedtls/private/gcm.h`，换 v6.0.3 后解决，
   该 include 在未打补丁的原始 SDK 里同样存在，与适配包无关）
-- ⚠️ **未上板验证**：屏亮、触摸对齐、录放、电池读数、V1.0/V1.2 各自启动，都还需要实物逐项走一遍。
-  固件在 `.verify/out/`（不入库）；**烧录会覆盖原厂 xiaozhi 固件，建议先备份 16 MB flash**
+- ✅ **已烧录并上板启动**（2026-11-06 23:05，COM27）：用户明确不用备份原厂固件，
+  4 个镜像逐段 `Hash of data verified`；启动日志确认 `board: Espressif ESP-VoCat`、
+  `PCB V1.0 (cached)`、`mxic (opi) / opi_str`、16 MB Octal PSRAM、360×360 UI、
+  ES8311/ES7210 16 kHz 双声道、双麦自检有信号、WiFi 扫到 16 个 AP、BLE 广播，
+  12 秒无重启无 panic。详见 [`docs/构建验证记录.md`](docs/构建验证记录.md) 第 8 节。
+- ⚠️ **人工验收仍待做**：设备停在 `waiting for BLE provision`，需 App 配网 + 按键配对；
+  颜色、触摸、外放、唤醒词、电量计读数、BOOT 键、V1.2 实物仍需逐项走一遍。
+  固件与日志在 `.verify/out/`（不入库）
 
 音频采用**方案 A**：对齐 Muse 固定的 16 kHz / 16-bit / STD 双槽，ES7210 只选 MIC1|MIC2 并混合两路。
 官方的 24 kHz / TDM 4 槽 / AEC 参考通道未移植（Muse 共享层全库无 `i2s_tdm`），留作后续里程碑。

@@ -104,6 +104,14 @@ PCB 版本、电量计芯片型号、颜色反转方向都标为「未确认」�
 
 ### 6.2 上电与串口（COM27，ESP32-S3 原生 USB-Serial/JTAG）
 
+> **2026-11-06 23:05 实测**：固件已烧入 COM27（用户明确不备份原厂 flash）。
+> 第 6、7、8、9 条由启动日志直接通过：`detected chip: mxic (opi)` / `flash io: opi_str`、
+> 32 MB vs 16 MB 容量提示（预期）、`Found 16MB PSRAM device / Speed: 80MHz`、
+> `muse: board: Espressif ESP-VoCat` + `esp_vocat: PCB V1.0 (cached, reset reason 11)`。
+> 第 10 条的**缓存命中**部分已由 `cached` 证实；「缓存路径仍套用 V1.2 引脚」需 V1.2 实物才能验。
+> 抓取晚于复位约 0.5 s，故 `Octal Flash Mode Enabled` 头部行未抓到，但 OPI 证据充分。
+> 原文见 `.verify/out/boot.log`，逐条对照见 `docs/构建验证记录.md` 第 8.3 节。
+
 | # | 观察点 | 期望串口输出 / 现象 | 失败时排查 |
 |---|---|---|---|
 | 6 | Flash 模式 | `Octal Flash Mode Enabled`、`detected chip: mxic (opi)`、`flash io: opi_str` | 探测失败→回 6.1 第 2 条；写成 DIO/QIO 会直接起不来 |
@@ -113,6 +121,15 @@ PCB 版本、电量计芯片型号、颜色反转方向都标为「未确认」�
 | 10 | 软复位 | 重启后版本**不重探**（命中 RTC 缓存），但缓存路径仍须套用 V1.2 引脚 | 若每次都重探→检查 `RTC_NOINIT` magic；残电会造成假 ACK |
 
 ### 6.3 外设逐项
+
+> **2026-11-06 23:05 日志侧的证据**（不等于人工验收通过）：
+> `esp_lvgl:adapter: LVGL adapter initialized successfully` + `muse_ui: UI up: 360x360, 192 px Muse, 40 ms frames`
+> → 第 11 条驱动侧通过，花屏/颜色仍需肉眼；
+> `esp_vocat: ES8311/ES7210 ready at 16000 Hz STD stereo (16-bit)` +
+> `muse_audio: self-test: mic L -58.9 dBFS / R -59.6 dBFS / corr 0.79` → 第 14/15 条 Codec 侧通过，
+> 可听/可唤醒仍需交互；
+> `SDK token: (none)` + `no wifi creds, waiting for BLE provision` → 第 18 条配对**尚未完成**。
+> 第 12、13、16、17 条日志无法定论，必须逐项人工验收。
 
 | # | 外设 | 期望现象 | 判定 / 失败排查 |
 |---|---|---|---|
