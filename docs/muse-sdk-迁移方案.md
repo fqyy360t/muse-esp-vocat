@@ -289,7 +289,7 @@ idf.py -B build-muse-esp-vocat -DIDF_TARGET=esp32s3 \
 
 ---
 
-## 10. 当前状态 / 未完成清单（2026-11-06 复核）
+## 10. 当前状态 / 未完成清单（2026-11-06 22:01 复核更新）
 
 > **21:58 复核更新（覆盖下表第 1、3 项）**：已在独立 SDK 副本上完成真实构建链验证——
 > `reconfigure` 通过、overlay 全部生效、**`board_esp_vocat.c` 编译通过**（`.obj` 126 KB）；
@@ -297,19 +297,23 @@ idf.py -B build-muse-esp-vocat -DIDF_TARGET=esp32s3 \
 > （v5.5.5 无此头文件，原始 SDK 同样有该 include），因此仍需 **IDF v6.0.3** 才能产出 `.bin`。
 > 单测已用对照实验归因为 Windows 环境性。完整证据见 `docs/构建验证记录.md`。
 > Docker 容器路径本机不可用（manifest `Bad Gateway`）。
+> 下表已按 22:01 实测结果重写（原表停留在编码前状态，已作废）。
 
-| # | 未完成项 | 阻塞条件 | 谁来做 |
+| # | 项目 | 状态 | 说明 / 阻塞 |
 |---|---|---|---|
-| 1 | **编译验证**：`apply.py` 应用到 SDK 副本 → `board.sh build vocat` → 核对生成的 `sdkconfig` → `check_sizes` | 本机只有 IDF v5.5.5；SDK/CI/board.sh 均要求 **v6.0.3**，Docker daemon 未运行 | 需用户装 v6.0.3 或启动 Docker 后，我可继续 |
-| 2 | **回归编译另一块 UI 板**，确认 CMake `elseif` 链没破坏其它板 | 同 1 | 同上 |
-| 3 | **跑 SDK 单测** `python3 -m unittest discover -s tests -p 'test_*.py'`（位于 `<sdk>/esp32/tests`） | 同 1（部分单测为纯 host 测试，可提前跑） | 我可先跑 host 单测 |
-| 4 | **上板验收**：屏亮 / 触摸对齐 / 配对 / 录放 / 电池读数 / 颜色反转 / V1.0 与 V1.2 各自启动 | 需编译产物 + 实物（喵伴已在 COM27） | 用户烧录后配合串口日志 |
-| 5 | **确认 PCB 版本与电量计型号**：目前 GPIO48 探测与 0x55 寄存器是按官方代码移植，未用实物确认 | 需上板串口输出 | 同 4 |
-| 6 | **应用补丁到真实 SDK 副本**：`apply.py` 只在临时骨架副本上验证过（19/19 + 幂等），真实副本尚未应用 | 用户指定副本路径 | 用户执行或授权我执行 |
-| 7 | **GitHub 提交**：已本地 commit `67b116b`，未加远程、未 push | 用户提供仓库地址并授权 | 用户 |
-| 8 | 音频方案 B（24 kHz / TDM 4 槽 / AEC 参考通道） | Muse 共享层无 `i2s_tdm`，需改共享层 | 后续里程碑，当前方案 A 可用即可 |
-| 9 | BMI270 IMU / microSD / UART 旋转底座 / 摄像头接入 | Muse 框架无对应抽象 | 后续里程碑，非必需 |
-| 10 | `project-flow-cy` 全量协作骨架（charter/plan/decisions/踩坑记录/tasks/hook/AGENTS 入口） | 用户已选「保持最小集」 | 明确不做 |
+| 1 | 补丁应用（19 处锚点） | ✅ 已完成 | 独立副本 `.verify/esp32` 上 19/19 真实应用，二次运行 19 项全 skip（幂等 0/19/0/0）；上游 SDK 仓库零改动 |
+| 2 | `idf.py reconfigure` + `sdkconfig` 核对 | ✅ 已完成 | v5.5.5 下通过；OCT_FLASH / FLASHMODE_OPI / SAMPLE_MODE_STR / 16MB / SPIRAM_MODE_OCT / MUSE_BOARD_ID 全部生效 |
+| 3 | **新增板级 C 代码编译** | ✅ 已完成 | `board_esp_vocat.c.obj` 126 KB、退出码 0；LVGL / esp_lvgl_adapter 依赖链同时补齐 |
+| 4 | 补丁后脚本语法 / 单测归因 | ✅ 已完成 | `ports.py`/`avatar.py` 的 `ast.parse` 通过；全量单测 188 errors 经「原始 SDK 对照组」确认为 Windows 缺 `fcntl`，非回归 |
+| 5 | **全量链接产出 `.bin`** | ❌ 未完成 | 唯一硬阻塞 = **ESP-IDF v6.0.3**。失败在上游 `main/link_pairing.c:31` 的 `mbedtls/private/gcm.h`（未打补丁的原始 SDK 同样有），v5.5.5 无此头文件。Docker daemon 在跑但拉镜像 manifest 报 `Bad Gateway`，原生安装属 GB 级动作未执行 |
+| 6 | 另一块 UI 板回归编译 | ❌ 未完成 | 依赖 5 |
+| 7 | Linux/macOS 或 CI 跑全量 host 单测 | ❌ 未完成 | Windows 环境性失败，需在 Unix 侧复跑 |
+| 8 | **上板验收**（18 条逐项判据） | ❌ 未完成 | 需编译产物 + 实物（喵伴在 COM27）；判据见 `board/esp-vocat.md` 第 6 节 |
+| 9 | PCB 版本（V1.0/V1.2）与 0x55 电量计型号实物确认 | ❌ 未完成 | 目前按官方源码移植，需上板串口输出定论 |
+| 10 | **GitHub 远程与 push** | ❌ 未完成 | 本地 3 个 commit（最新 `86b0625`），工作树干净，**未加远程、未 push**，等用户给仓库地址 |
+| 11 | 音频方案 B（24 kHz / TDM 4 槽 / AEC） | ⏸ 后续里程碑 | Muse 共享层无 `i2s_tdm`；当前方案 A（16 kHz / STD 双槽）可用 |
+| 12 | BMI270 / microSD / UART 底座 / 摄像头 | ⏸ 后续里程碑 | 框架无对应抽象，非必需 |
+| 13 | `project-flow-cy` 全量协作骨架 | ⛔ 明确不做 | 用户已选「保持最小集」 |
 
 **本次复核补做（2026-11-06 21:10）**：`apply.py --check` 复跑仍 19/19；在临时骨架副本上
 应用补丁后，对被改的 `ports.py` / `avatar.py` 做 `ast.parse` **语法检查通过**。
