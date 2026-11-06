@@ -32,6 +32,25 @@
 | `docs/构建验证记录.md` | 补丁、编译、烧录、启动日志的逐项证据 |
 | `flow/进展.md` | 按 `project-flow-cy` 写的接力交接记录 |
 
+## 现成固件（Release，无需编译）
+
+[`v0.1.0` Release](https://github.com/fqyy360t/muse-esp-vocat/releases/tag/v0.1.0)
+附 ESP-IDF v6.0.3 构建的**完整可烧录固件**：四件套、0x0 起始的合并镜像、
+ELF 符号与构建日志。解压 `muse-esp-vocat-v0.1.0-flash.zip` 后：
+
+```bash
+esptool.py --chip esp32s3 --port COM27 --baud 921600 \
+  --before default_reset --after hard_reset \
+  write_flash --flash_mode dout --flash_size keep --flash_freq 80m \
+  0x0 bootloader.bin 0x10000 partition-table.bin \
+  0x1d000 ota_data_initial.bin 0x20000 muse-gadget.bin
+```
+
+也可以用合并镜像单文件 `write_flash 0x0 muse-esp-vocat-merged-v0.1.0.bin`
+（该镜像做过逐字节校验，**未单独实烧验证**；四文件方式是 COM27 实测路径）。
+参数、校验和与硬件前提见 flash 包内 `README-FLASH.md` / `SHA256SUMS.txt`。
+**烧录会覆盖原厂固件。**
+
 ## 快速开始
 
 ```bash
@@ -100,9 +119,12 @@ python apply.py --sdk /path/to/muse-gadget-sdk
   `PCB V1.0 (cached)`、`mxic (opi) / opi_str`、16 MB Octal PSRAM、360×360 UI、
   ES8311/ES7210 16 kHz 双声道、双麦自检有信号、WiFi 扫到 16 个 AP、BLE 广播，
   12 秒无重启无 panic。详见 [`docs/构建验证记录.md`](docs/构建验证记录.md) 第 8 节。
+- ✅ **GitHub 发布**：仓库 `fqyy360t/muse-esp-vocat`、tag `v0.1.0`，Release 附
+  四件套 + 0x0 合并镜像 + ELF/日志（脱敏）+ `SHA256SUMS.txt`；
+  资产清单与校验见 [`docs/构建验证记录.md`](docs/构建验证记录.md) 第 10 节。
 - ⚠️ **人工验收仍待做**：设备停在 `waiting for BLE provision`，需 App 配网 + 按键配对；
   颜色、触摸、外放、唤醒词、电量计读数、BOOT 键、V1.2 实物仍需逐项走一遍。
-  固件与日志在 `.verify/out/`（不入库）
+  未脱敏的原始日志只留本地 `.verify/out/`（不入库）
 
 音频采用**方案 A**：对齐 Muse 固定的 16 kHz / 16-bit / STD 双槽，ES7210 只选 MIC1|MIC2 并混合两路。
 官方的 24 kHz / TDM 4 槽 / AEC 参考通道未移植（Muse 共享层全库无 `i2s_tdm`），留作后续里程碑。
@@ -115,4 +137,8 @@ python apply.py --sdk /path/to/muse-gadget-sdk
 - `muse_board_t` 接口与装配骨架：`facebookincubator/muse-gadget-sdk`（Apache-2.0）
 - 本仓库新增的适配代码与脚本：按上述两者兼容的条款提供，未声明为本仓库原创的部分请沿用原声明
 
-提交到 GitHub 前请确认没有把串口日志、设备 MAC、Wi-Fi 凭据等硬件/个人信息带进去。
+**发布前检查（2026-11-06 已执行）**：所有二进制产物（含 21 MB ELF）、sdkconfig
+与依赖锁逐字节扫描，不含设备 MAC、Wi-Fi 凭据、SDK token 或本机用户目录；
+Release 日志与入库文档中的设备标识（MAC、BLE 广播名、PnP 实例 ID）已统一替换为占位符，
+规则见 debug 包内 `REDACTION.md`。文档中的 `F:\git\...` 是本地源码位置示例，不含用户名；
+原始串口日志仅保留在本地，不随仓库或 Release 发布。
